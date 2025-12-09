@@ -46,11 +46,11 @@ resource "aws_security_group" "eks_cluster" {
   }
 }
 
-# EKS 클러스터 생성
+# EKS 클러스터 생성 (Kubernetes 1.32 버전)
 resource "aws_eks_cluster" "main" {
   name     = "eks-${var.environment}"
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.34"
+  version  = "1.32"  # Kubernetes 1.32 버전 사용
   
   vpc_config {
     subnet_ids              = var.private_subnets
@@ -114,10 +114,10 @@ resource "aws_security_group" "eks_nodes" {
   
   # 클러스터에서 노드로 통신
   ingress {
-    description     = "All traffic from cluster"
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
+    description = "All traffic from cluster"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = [var.vpc_cidr]
   }
   
@@ -148,12 +148,12 @@ resource "aws_security_group_rule" "cluster_ingress_from_nodes" {
 
 # ==================== Web Tier Node Group ====================
 
-# Web Tier Node Group (Web Subnets에 배치)
+# Web Tier Node Group (Web Subnets에 배치 - 가용영역 A, C)
 resource "aws_eks_node_group" "web" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "eks-web-nodes-${var.environment}"
   node_role_arn   = aws_iam_role.eks_node_group.arn
-  subnet_ids      = var.web_subnets  # Web Tier 전용 서브넷
+  subnet_ids      = var.web_subnets  # Web Tier 전용 서브넷 (web_a: AZ-A, web_c: AZ-C)
   
   # 인스턴스 타입 및 크기
   instance_types = [var.node_instance_type]
@@ -170,9 +170,12 @@ resource "aws_eks_node_group" "web" {
   }
   
   # 원격 액세스 (선택적)
-  remote_access {
-    ec2_ssh_key               = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.eks_nodes.id]
+  dynamic "remote_access" {
+    for_each = var.ssh_key_name != null ? [1] : []
+    content {
+      ec2_ssh_key               = var.ssh_key_name
+      source_security_group_ids = [aws_security_group.eks_nodes.id]
+    }
   }
   
   # 레이블 - Pod 배치용
@@ -198,12 +201,12 @@ resource "aws_eks_node_group" "web" {
 
 # ==================== WAS Tier Node Group ====================
 
-# WAS Tier Node Group (WAS Subnets에 배치)
+# WAS Tier Node Group (WAS Subnets에 배치 - 가용영역 A, C)
 resource "aws_eks_node_group" "was" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "eks-was-nodes-${var.environment}"
   node_role_arn   = aws_iam_role.eks_node_group.arn
-  subnet_ids      = var.was_subnets  # WAS Tier 전용 서브넷
+  subnet_ids      = var.was_subnets  # WAS Tier 전용 서브넷 (was_a: AZ-A, was_c: AZ-C)
   
   # 인스턴스 타입 및 크기
   instance_types = [var.node_instance_type]
@@ -220,9 +223,12 @@ resource "aws_eks_node_group" "was" {
   }
   
   # 원격 액세스 (선택적)
-  remote_access {
-    ec2_ssh_key               = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.eks_nodes.id]
+  dynamic "remote_access" {
+    for_each = var.ssh_key_name != null ? [1] : []
+    content {
+      ec2_ssh_key               = var.ssh_key_name
+      source_security_group_ids = [aws_security_group.eks_nodes.id]
+    }
   }
   
   # 레이블 - Pod 배치용
@@ -268,8 +274,8 @@ resource "aws_iam_openid_connect_provider" "eks" {
 
 # Load Balancer Controller IAM Policy
 resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name        = "AWSLoadBalancerControllerIAMPolicy-${var.environment}"
-  description = "IAM policy for AWS Load Balancer Controller"
+  name        = "AWSLoadBalancerControllerPolicy-${var.environment}"
+  description = "Policy for AWS Load Balancer Controller"
   
   policy = jsonencode({
     Version = "2012-10-17"
@@ -277,17 +283,31 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
       {
         Effect = "Allow"
         Action = [
-          "iam:CreateServiceLinkedRole",
+          "iam:CreateServiceLinkedRole"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "iam:AWSServiceName" = "elasticloadbalancing.amazonaws.com"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "ec2:DescribeAccountAttributes",
           "ec2:DescribeAddresses",
           "ec2:DescribeAvailabilityZones",
           "ec2:DescribeInternetGateways",
           "ec2:DescribeVpcs",
+          "ec2:DescribeVpcPeeringConnections",
           "ec2:DescribeSubnets",
           "ec2:DescribeSecurityGroups",
           "ec2:DescribeInstances",
           "ec2:DescribeNetworkInterfaces",
           "ec2:DescribeTags",
+          "ec2:GetCoipPoolUsage",
+          "ec2:DescribeCoipPools",
           "elasticloadbalancing:DescribeLoadBalancers",
           "elasticloadbalancing:DescribeLoadBalancerAttributes",
           "elasticloadbalancing:DescribeListeners",
@@ -304,14 +324,141 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
       {
         Effect = "Allow"
         Action = [
+          "cognito-idp:DescribeUserPoolClient",
+          "acm:ListCertificates",
+          "acm:DescribeCertificate",
+          "iam:ListServerCertificates",
+          "iam:GetServerCertificate",
+          "waf-regional:GetWebACL",
+          "waf-regional:GetWebACLForResource",
+          "waf-regional:AssociateWebACL",
+          "waf-regional:DisassociateWebACL",
+          "wafv2:GetWebACL",
+          "wafv2:GetWebACLForResource",
+          "wafv2:AssociateWebACL",
+          "wafv2:DisassociateWebACL",
+          "shield:GetSubscriptionState",
+          "shield:DescribeProtection",
+          "shield:CreateProtection",
+          "shield:DeleteProtection"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupIngress"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateSecurityGroup"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateTags"
+        ]
+        Resource = "arn:aws:ec2:*:*:security-group/*"
+        Condition = {
+          StringEquals = {
+            "ec2:CreateAction" = "CreateSecurityGroup"
+          }
+          Null = {
+            "aws:RequestTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateTags",
+          "ec2:DeleteTags"
+        ]
+        Resource = "arn:aws:ec2:*:*:security-group/*"
+        Condition = {
+          Null = {
+            "aws:RequestTag/elbv2.k8s.aws/cluster"  = "true"
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:DeleteSecurityGroup"
+        ]
+        Resource = "*"
+        Condition = {
+          Null = {
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "elasticloadbalancing:CreateLoadBalancer",
-          "elasticloadbalancing:CreateTargetGroup",
+          "elasticloadbalancing:CreateTargetGroup"
+        ]
+        Resource = "*"
+        Condition = {
+          Null = {
+            "aws:RequestTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "elasticloadbalancing:CreateListener",
           "elasticloadbalancing:DeleteListener",
           "elasticloadbalancing:CreateRule",
-          "elasticloadbalancing:DeleteRule",
+          "elasticloadbalancing:DeleteRule"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "elasticloadbalancing:AddTags",
-          "elasticloadbalancing:RemoveTags",
+          "elasticloadbalancing:RemoveTags"
+        ]
+        Resource = [
+          "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
+          "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*",
+          "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
+        ]
+        Condition = {
+          Null = {
+            "aws:RequestTag/elbv2.k8s.aws/cluster"  = "true"
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:AddTags",
+          "elasticloadbalancing:RemoveTags"
+        ]
+        Resource = [
+          "arn:aws:elasticloadbalancing:*:*:listener/net/*/*/*",
+          "arn:aws:elasticloadbalancing:*:*:listener/app/*/*/*",
+          "arn:aws:elasticloadbalancing:*:*:listener-rule/net/*/*/*",
+          "arn:aws:elasticloadbalancing:*:*:listener-rule/app/*/*/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "elasticloadbalancing:ModifyLoadBalancerAttributes",
           "elasticloadbalancing:SetIpAddressType",
           "elasticloadbalancing:SetSecurityGroups",
@@ -319,9 +466,53 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
           "elasticloadbalancing:DeleteLoadBalancer",
           "elasticloadbalancing:ModifyTargetGroup",
           "elasticloadbalancing:ModifyTargetGroupAttributes",
-          "elasticloadbalancing:DeleteTargetGroup",
+          "elasticloadbalancing:DeleteTargetGroup"
+        ]
+        Resource = "*"
+        Condition = {
+          Null = {
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:AddTags"
+        ]
+        Resource = [
+          "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
+          "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*",
+          "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "elasticloadbalancing:CreateAction" = [
+              "CreateTargetGroup",
+              "CreateLoadBalancer"
+            ]
+          }
+          Null = {
+            "aws:RequestTag/elbv2.k8s.aws/cluster" = "false"
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "elasticloadbalancing:RegisterTargets",
           "elasticloadbalancing:DeregisterTargets"
+        ]
+        Resource = "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:SetWebAcl",
+          "elasticloadbalancing:ModifyListener",
+          "elasticloadbalancing:AddListenerCertificates",
+          "elasticloadbalancing:RemoveListenerCertificates",
+          "elasticloadbalancing:ModifyRule"
         ]
         Resource = "*"
       }
@@ -393,7 +584,7 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
 resource "aws_eks_addon" "ebs_csi_driver" {
   cluster_name             = aws_eks_cluster.main.name
   addon_name               = "aws-ebs-csi-driver"
-  addon_version            = "v1.25.0-eksbuild.1"
+  addon_version            = "v1.37.0-eksbuild.1"  # EKS 1.32 호환 버전
   service_account_role_arn = aws_iam_role.ebs_csi_driver.arn
   
   tags = {
@@ -415,4 +606,5 @@ resource "aws_cloudwatch_log_group" "eks" {
   tags = {
     Name = "eks-cluster-logs"
   }
+
 }

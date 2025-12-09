@@ -15,6 +15,11 @@ variable "private_subnets" {
   type        = list(string)
 }
 
+variable "was_subnets" {
+  description = "WAS Tier 서브넷 ID 리스트 (Internal ALB용)"
+  type        = list(string)
+}
+
 variable "environment" {
   description = "환경 이름"
   type        = string

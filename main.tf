@@ -72,6 +72,7 @@ module "aws_alb" {
   
   vpc_id             = module.aws_vpc.vpc_id
   public_subnets     = module.aws_vpc.public_subnets
+  was_subnets       = module.aws_vpc.was_subnets
   private_subnets    = module.aws_vpc.private_subnets
   environment        = var.environment
 }

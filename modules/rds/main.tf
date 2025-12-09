@@ -47,10 +47,10 @@ resource "aws_security_group" "rds" {
   }
 }
 
-# RDS Parameter Group (성능 최적화)
+# RDS Parameter Group (MySQL 8.4용)
 resource "aws_db_parameter_group" "mysql" {
   name   = "mysql-params-${var.environment}"
-  family = "mysql8.0"
+  family = "mysql8.4"  # MySQL 8.4 패밀리로 변경
   
   # 성능 및 보안 파라미터 설정
   parameter {
@@ -83,23 +83,23 @@ resource "aws_db_parameter_group" "mysql" {
   }
 }
 
-# RDS Option Group
+# RDS Option Group (MySQL 8.4용)
 resource "aws_db_option_group" "mysql" {
   name                     = "mysql-options-${var.environment}"
   option_group_description = "MySQL option group"
   engine_name              = "mysql"
-  major_engine_version     = "8.0"
+  major_engine_version     = "8.4"  # MySQL 8.4로 변경
   
   tags = {
     Name = "mysql-option-group"
   }
 }
 
-# RDS Instance (Multi-AZ)
+# RDS Instance (Multi-AZ, MySQL 8.4)
 resource "aws_db_instance" "main" {
   identifier     = "rds-mysql-${var.environment}"
   engine         = "mysql"
-  engine_version = "8.4.7"
+  engine_version = "8.4.3"  # MySQL 8.4.3 버전 사용
   instance_class = var.db_instance_class
   
   # 스토리지 설정
@@ -143,18 +143,14 @@ resource "aws_db_instance" "main" {
   # 삭제 방지 설정
   deletion_protection = var.deletion_protection
   skip_final_snapshot = var.skip_final_snapshot
-  final_snapshot_identifier = var.skip_final_snapshot ? null : "rds-final-snapshot-${var.environment}-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  
-  # 자동 마이너 버전 업그레이드
-  auto_minor_version_upgrade = true
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "rds-mysql-${var.environment}-final-snapshot"
   
   tags = {
     Name = "rds-mysql-primary"
-    Tier = "Database"
   }
 }
 
-# RDS Monitoring IAM Role
+# RDS Monitoring Role
 resource "aws_iam_role" "rds_monitoring" {
   name = "rds-monitoring-role-${var.environment}"
   
@@ -168,13 +164,8 @@ resource "aws_iam_role" "rds_monitoring" {
       }
     }]
   })
-  
-  tags = {
-    Name = "rds-monitoring-role"
-  }
 }
 
-# Attach Enhanced Monitoring Policy
 resource "aws_iam_role_policy_attachment" "rds_monitoring" {
   role       = aws_iam_role.rds_monitoring.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
@@ -182,9 +173,9 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 
 # ==================== CloudWatch Alarms ====================
 
-# CPU Utilization Alarm
-resource "aws_cloudwatch_metric_alarm" "cpu" {
-  alarm_name          = "rds-cpu-high-${var.environment}"
+# CPU 사용률 알람
+resource "aws_cloudwatch_metric_alarm" "rds_cpu" {
+  alarm_name          = "rds-high-cpu-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "2"
   metric_name         = "CPUUtilization"
@@ -192,54 +183,53 @@ resource "aws_cloudwatch_metric_alarm" "cpu" {
   period              = "300"
   statistic           = "Average"
   threshold           = "80"
-  alarm_description   = "RDS CPU utilization is too high"
+  alarm_description   = "RDS CPU 사용률이 80%를 초과했습니다"
+  alarm_actions       = var.alarm_actions
   
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
   }
-  
-  alarm_actions = var.alarm_actions
 }
 
-# Database Connections Alarm
-resource "aws_cloudwatch_metric_alarm" "connections" {
-  alarm_name          = "rds-connections-high-${var.environment}"
+# 연결 수 알람
+resource "aws_cloudwatch_metric_alarm" "rds_connections" {
+  alarm_name          = "rds-high-connections-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "2"
   metric_name         = "DatabaseConnections"
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "150"
-  alarm_description   = "RDS database connections are too high"
+  threshold           = "100"
+  alarm_description   = "RDS 연결 수가 100개를 초과했습니다"
+  alarm_actions       = var.alarm_actions
   
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
   }
-  
-  alarm_actions = var.alarm_actions
 }
 
-# Free Storage Space Alarm
-resource "aws_cloudwatch_metric_alarm" "storage" {
-  alarm_name          = "rds-storage-low-${var.environment}"
+# 스토리지 공간 알람
+resource "aws_cloudwatch_metric_alarm" "rds_storage" {
+  alarm_name          = "rds-low-storage-${var.environment}"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = "1"
   metric_name         = "FreeStorageSpace"
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "10737418240"  # 10GB in bytes
-  alarm_description   = "RDS free storage space is too low"
+  threshold           = "5000000000"  # 5GB
+  alarm_description   = "RDS 여유 스토리지가 5GB 미만입니다"
+  alarm_actions       = var.alarm_actions
   
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
   }
-  
-  alarm_actions = var.alarm_actions
 }
 
-# Read Replica (선택적 - 읽기 성능 향상)
+# ==================== Read Replica (Optional) ====================
+
+# Read Replica
 resource "aws_db_instance" "read_replica" {
   count = var.create_read_replica ? 1 : 0
   

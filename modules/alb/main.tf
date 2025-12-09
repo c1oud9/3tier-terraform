@@ -150,13 +150,13 @@ resource "aws_security_group" "web_tier" {
   }
 }
 
-# Internal ALB
+# Internal ALB - WAS Tier 서브넷 사용 (각 가용영역 A, C에 하나씩)
 resource "aws_lb" "internal" {
   name               = "int-alb-${var.environment}"
   internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.internal_alb.id]
-  subnets            = var.private_subnets
+  subnets            = var.was_subnets  # WAS 서브넷 사용 (was_a: AZ-A, was_c: AZ-C)
   
   enable_deletion_protection = false
   enable_http2               = true
