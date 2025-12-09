@@ -114,32 +114,15 @@ resource "aws_security_group" "eks_nodes" {
   
   # 클러스터에서 노드로 통신
   ingress {
-    description     = "Allow cluster to communicate with nodes"
+    description     = "All traffic from cluster"
     from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.eks_cluster.id]
-  }
-  
-  # 노드 간 통신
-  ingress {
-    description = "Allow nodes to communicate with each other"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "-1"
-    self        = true
-  }
-  
-  # ALB에서 노드로 통신 (NodePort 범위)
-  ingress {
-    description     = "Allow ALB to reach NodePort services"
-    from_port       = 30000
-    to_port         = 32767
-    protocol        = "tcp"
-    security_groups = [var.alb_security_group_id]
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   
   egress {
+    description = "allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -424,6 +407,10 @@ resource "aws_eks_addon" "ebs_csi_driver" {
 resource "aws_cloudwatch_log_group" "eks" {
   name              = "/aws/eks/${aws_eks_cluster.main.name}/cluster"
   retention_in_days = 7
+
+  lifecycle {
+    ignore_changes = [name]
+  }
   
   tags = {
     Name = "eks-cluster-logs"
