@@ -71,7 +71,7 @@ resource "aws_lb_target_group" "external" {
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/actuator/health"
+    path                = "/health"
     matcher             = "200"
   }
   
