@@ -322,7 +322,8 @@ resource "aws_security_group" "lambda" {
   }
 }
 
-# Lambda 함수
+# Lambda 함수 - 패키지 파일이 있을 때만 배포
+# 패키지 생성: cd scripts/lambda-db-sync && ./package.sh && cd ../..
 resource "aws_lambda_function" "db_sync" {
   filename         = "${path.module}/scripts/lambda-db-sync/lambda-package.zip"
   function_name    = "db-sync-function"
@@ -365,14 +366,14 @@ resource "aws_cloudwatch_event_rule" "db_sync_schedule" {
   schedule_expression = "rate(5 minutes)"
 }
 
-# EventBridge 타겟
+# EventBridge 타겟 - Lambda가 있을 때만 생성
 resource "aws_cloudwatch_event_target" "lambda" {
   rule      = aws_cloudwatch_event_rule.db_sync_schedule.name
   target_id = "lambda"
   arn       = aws_lambda_function.db_sync.arn
 }
 
-# Lambda 실행 권한
+# Lambda 실행 권한 - Lambda가 있을 때만 생성
 resource "aws_lambda_permission" "allow_eventbridge" {
   statement_id  = "AllowExecutionFromEventBridge"
   action        = "lambda:InvokeFunction"
@@ -469,4 +470,3 @@ resource "aws_cloudwatch_dashboard" "main" {
 
 # 현재 AWS 계정 정보
 data "aws_caller_identity" "current" {}
-

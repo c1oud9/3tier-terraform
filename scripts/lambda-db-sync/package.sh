@@ -17,7 +17,7 @@ mkdir -p package
 echo "📦 Python 종속성 설치 중..."
 
 # Python 패키지 설치
-pip install -r requirements.txt -t package/ --platform manylinux2014_x86_64 --only-binary=:all:
+pip install -r requirements.txt -t package/ --platform manylinux2014_x86_64 --only-binary=:all: --upgrade
 
 echo "📄 Lambda 함수 코드 복사 중..."
 
@@ -28,11 +28,11 @@ echo "🗜️  ZIP 파일 생성 중..."
 
 # ZIP 파일 생성
 cd package
-zip -r ../lambda-db-sync.zip .
+zip -r ../lambda-package.zip .
 cd ..
 
 # 정리
 rm -rf package
 
-echo "✅ Lambda 패키징 완료: lambda-db-sync.zip"
-echo "📦 파일 크기: $(du -h lambda-db-sync.zip | cut -f1)"
+echo "✅ Lambda 패키징 완료: lambda-package.zip"
+echo "📦 파일 크기: $(du -h lambda-package.zip | cut -f1)"

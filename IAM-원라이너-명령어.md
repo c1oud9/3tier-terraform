@@ -32,7 +32,7 @@ done && echo "✓ 완료!"
 ## 🎯 Group에 추가 (원라이너)
 
 ```bash
-GROUP_NAME="terraform-group" && \
+GROUP_NAME="I2ST" && \
 for policy in \
   AmazonVPCFullAccess \
   AmazonEKSClusterPolicy \
@@ -81,7 +81,7 @@ aws iam create-user --user-name terraform-user
 aws iam create-access-key --user-name terraform-user
 
 # 한방에 권한 추가
-USER_NAME="terraform-user" && \
+USER_NAME="I2ST" && \
 for policy in AmazonVPCFullAccess AmazonEKSClusterPolicy AmazonEKSWorkerNodePolicy AmazonEKS_CNI_Policy AmazonEC2ContainerRegistryReadOnly AmazonRDSFullAccess AWSLambda_FullAccess AmazonS3FullAccess CloudWatchFullAccess IAMFullAccess AmazonRoute53FullAccess ElasticLoadBalancingFullAccess AmazonEventBridgeFullAccess AmazonSNSFullAccess AmazonEC2FullAccess; do
   aws iam attach-user-policy --user-name $USER_NAME --policy-arn arn:aws:iam::aws:policy/$policy
 done
@@ -93,7 +93,7 @@ done
 aws iam create-group --group-name terraform-admins
 
 # 한방에 권한 추가
-GROUP_NAME="terraform-admins" && \
+GROUP_NAME="I2ST" && \
 for policy in AmazonVPCFullAccess AmazonEKSClusterPolicy AmazonEKSWorkerNodePolicy AmazonEKS_CNI_Policy AmazonEC2ContainerRegistryReadOnly AmazonRDSFullAccess AWSLambda_FullAccess AmazonS3FullAccess CloudWatchFullAccess IAMFullAccess AmazonRoute53FullAccess ElasticLoadBalancingFullAccess AmazonEventBridgeFullAccess AmazonSNSFullAccess AmazonEC2FullAccess; do
   aws iam attach-group-policy --group-name $GROUP_NAME --policy-arn arn:aws:iam::aws:policy/$policy
 done
