@@ -73,6 +73,8 @@ output "aws_rds_port" {
 
 # ==================== Route53 Outputs ====================
 
+/*
+
 output "route53_zone_id" {
   description = "Route53 Hosted Zone ID"
   value       = aws_route53_zone.main.zone_id
@@ -83,15 +85,20 @@ output "route53_nameservers" {
   value       = aws_route53_zone.main.name_servers
 }
 
+
+
 output "primary_endpoint" {
   description = "Primary 엔드포인트 (AWS)"
   value       = "http://${var.domain_name}"
 }
 
+*/
+
 # output "secondary_endpoint" {
 #   description = "Secondary 엔드포인트 (Azure)"
 #   value       = "http://${module.azure_aks.app_gateway_public_ip}"
 # }
+
 
 # ==================== 데이터베이스 자격증명 ====================
 
@@ -155,21 +162,21 @@ output "deployment_summary" {
   ║         (Azure DR 사이트는 비활성화됨)                          ║
   ╚════════════════════════════════════════════════════════════════╝
   
-  🌐 Primary Site (AWS):
+  Primary Site (AWS):
      - Region: ${var.aws_region}
      - ALB: ${module.aws_alb.external_alb_dns}
      - RDS: ${module.aws_rds.db_endpoint}
   
-  📊 Monitoring:
+  Monitoring:
      - Dashboard: CloudWatch (${var.aws_region})
   
-  💾 Backup:
+  Backup:
      - S3 Bucket: ${aws_s3_bucket.backup.id}
      - Lambda Sync: 5분 주기 자동 실행
   
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   
-  📝 다음 단계:
+  다음 단계:
   
   1. Route53 네임서버 설정:
      도메인 등록업체에서 다음 네임서버로 설정하세요:
@@ -188,7 +195,7 @@ output "deployment_summary" {
   
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   
-  ⚠️  참고: Azure DR 사이트를 활성화하려면 main.tf의 주석을 해제하세요.
+   참고: Azure DR 사이트를 활성화하려면 main.tf의 주석을 해제하세요.
   
   EOT
 }

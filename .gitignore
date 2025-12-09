@@ -14,6 +14,7 @@ override.tf.json
 
 # Lambda 패키지
 scripts/lambda-db-sync/lambda-db-sync.zip
+scripts/lambda-db-sync/package.zip
 scripts/lambda-db-sync/package/
 *.pyc
 __pycache__/

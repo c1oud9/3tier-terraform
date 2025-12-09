@@ -110,7 +110,7 @@ variable "web_port" {
 variable "domain_name" {
   description = "Route53에서 관리할 도메인 이름"
   type        = string
-  default     = "example.com"
+  default     = "not-configured.local"
 }
 
 # ==================== EKS 변수 ====================

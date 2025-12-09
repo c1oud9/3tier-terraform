@@ -188,6 +188,7 @@ resource "random_password" "db_password" {
   override_special = "!#$%&*()-_=+[]{}<>?"
 }
 
+/*
 # Route53 DNS Failover (Health Check 포함) - Azure 부분 비활성화
 resource "aws_route53_zone" "main" {
   name = var.domain_name
@@ -231,6 +232,8 @@ resource "aws_route53_record" "primary" {
     evaluate_target_health = true
   }
 }
+
+*/
 
 # Secondary Record (Azure) - 비활성화
 # resource "aws_route53_record" "secondary" {
@@ -420,9 +423,13 @@ resource "aws_s3_bucket_lifecycle_configuration" "backup" {
   rule {
     id     = "delete-old-backups"
     status = "Enabled"
+
+    filter {
+      prefix = "backups/"
+    }
     
     expiration {
-      days = 30
+      days = var.backup_retention_days
     }
   }
 }

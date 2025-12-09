@@ -50,7 +50,7 @@ resource "aws_security_group" "eks_cluster" {
 resource "aws_eks_cluster" "main" {
   name     = "eks-${var.environment}"
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.28"
+  version  = "1.34"
   
   vpc_config {
     subnet_ids              = var.private_subnets
