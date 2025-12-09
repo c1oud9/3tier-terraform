@@ -1,0 +1,69 @@
+# terraform.tfvars.example
+# 이 파일을 복사하여 terraform.tfvars로 저장하고 실제 값을 입력하세요
+# cp terraform.tfvars.example terraform.tfvars
+
+# ==================== 기본 설정 ====================
+environment  = "prod"
+project_name = "multi-cloud-dr"
+
+# ==================== AWS 설정 ====================
+aws_region = "ap-northeast-2"  # 서울 리전
+aws_vpc_cidr = "10.0.0.0/16"
+aws_availability_zones = ["ap-northeast-2a", "ap-northeast-2c"]
+
+# ==================== Azure 설정 ====================
+azure_region = "koreacentral"  # 한국 중부
+azure_vnet_cidr = "172.16.0.0/16"
+azure_availability_zones = ["1", "2"]
+
+# ==================== 데이터베이스 설정 ====================
+db_name     = "petclinic"
+db_username = "admin"
+# db_password는 자동 생성됩니다 (random_password 리소스)
+
+db_instance_class = "db.t3.medium"  # AWS RDS
+azure_mysql_sku   = "B_Standard_B1ms"  # Azure MySQL
+
+# ==================== DNS 설정 ====================
+# Route53에서 관리할 도메인 (사전에 등록된 도메인 필요)
+domain_name = "example.com"
+
+# ==================== 애플리케이션 설정 ====================
+app_image = "springcommunity/spring-petclinic:latest"
+web_image = "nginx:latest"
+
+# EKS 노드 설정
+eks_node_instance_type = "t3.medium"  # EKS 워커 노드 인스턴스 타입
+
+# Web Tier Node Group (Web Subnet에 배치)
+eks_web_desired_size   = 2            # Web 노드 원하는 수
+eks_web_min_size       = 1            # Web 노드 최소 수
+eks_web_max_size       = 4            # Web 노드 최대 수
+
+# WAS Tier Node Group (WAS Subnet에 배치)
+eks_was_desired_size   = 2            # WAS 노드 원하는 수
+eks_was_min_size       = 1            # WAS 노드 최소 수
+eks_was_max_size       = 4            # WAS 노드 최대 수
+
+# AKS 설정 (Warm Standby)
+aks_node_count = 1  # 최소 노드
+aks_node_size  = "Standard_B2s"
+aks_min_nodes  = 1
+aks_max_nodes  = 5
+
+# ==================== 모니터링 설정 ====================
+enable_cloudwatch = true
+alarm_email       = "admin@example.com"
+
+# ==================== 백업 설정 ====================
+backup_retention_days = 7
+snapshot_schedule     = "cron(0 2 * * ? *)"  # 매일 오전 2시
+
+# ==================== 태그 설정 ====================
+tags = {
+  Project     = "Multi-Cloud-DR"
+  Team        = "DevOps"
+  ManagedBy   = "Terraform"
+  Environment = "Production"
+  CostCenter  = "Engineering"
+}

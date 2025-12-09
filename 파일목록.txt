@@ -1,0 +1,122 @@
+# 멀티클라우드 DR 아키텍처 Terraform 프로젝트
+
+## 📂 전체 파일 구조 (총 39개 파일)
+
+terraform-multi-cloud-dr/
+│
+├── 📄 main.tf                         # 메인 Terraform 구성
+├── 📄 variables.tf                    # 입력 변수 정의
+├── 📄 outputs.tf                      # 출력 변수 정의
+├── 📄 terraform.tfvars.example        # 변수 값 예제
+├── 📄 .gitignore                      # Git 제외 파일
+│
+├── 📜 deploy.sh                       # 자동 배포 스크립트 ⭐
+│
+├── 📚 README.md                       # 전체 문서 (상세)
+├── 📚 QUICKSTART.md                   # 빠른 시작 가이드 ⭐
+├── 📚 PROJECT_SUMMARY.md              # 프로젝트 요약
+├── 📚 배포완료안내.md                  # 최종 안내
+│
+├── 🔧 modules/                        # Terraform 모듈
+│   │
+│   ├── vpc/                          # VPC 모듈
+│   │   ├── aws_vpc.tf               # VPC, 서브넷, NAT, Flow Logs
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   │
+│   ├── alb/                          # ALB 모듈
+│   │   ├── main.tf                  # External/Internal ALB
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   │
+│   ├── rds/                          # RDS 모듈
+│   │   ├── main.tf                  # MySQL Multi-AZ
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   │
+│   └── ecs/                          # ECS 모듈
+│       ├── main.tf                  # Web/WAS Tier
+│       ├── variables.tf
+│       └── outputs.tf
+│
+├── 📜 scripts/                        # 스크립트
+│   └── lambda-db-sync/               # Lambda 함수
+│       ├── index.py                 # DB 동기화 코드 ⭐
+│       ├── requirements.txt         # Python 종속성
+│       └── package.sh               # 패키징 스크립트
+│
+├── 🐳 docker/                         # Docker 파일
+│   └── Dockerfile                   # 애플리케이션 이미지
+│
+└── ☸️  k8s-manifests/                 # Kubernetes 매니페스트
+    └── petclinic-deployment.yaml    # AKS 배포용
+
+## 🎯 핵심 파일
+
+### 반드시 읽어야 할 문서
+⭐ QUICKSTART.md        - 5단계로 배포하기 (20-30분)
+⭐ README.md            - 전체 상세 문서
+⭐ 배포완료안내.md       - 최종 체크리스트
+
+### 배포 시작
+⭐ deploy.sh            - 자동 배포 스크립트 실행
+
+### 설정 파일
+⭐ terraform.tfvars.example  - 복사하여 terraform.tfvars 생성
+
+### 주요 Terraform 파일
+⭐ main.tf              - Route53, Lambda, S3, CloudWatch
+⭐ modules/vpc/         - VPC, 서브넷, NAT, IGW
+⭐ modules/alb/         - External/Internal ALB
+⭐ modules/rds/         - RDS MySQL Multi-AZ
+⭐ modules/ecs/         - ECS Fargate (Web/WAS)
+
+### Lambda 함수
+⭐ scripts/lambda-db-sync/index.py  - DB 동기화 함수
+
+## 📊 통계
+
+- Terraform 파일: 15개 (.tf)
+- Python 스크립트: 1개 (.py)
+- 쉘 스크립트: 2개 (.sh)
+- 문서 파일: 4개 (.md)
+- 설정 파일: 5개
+- Docker/K8s: 2개
+
+총 파일 수: 39개
+압축 파일 크기: 29KB
+
+## 🚀 빠른 시작
+
+1. 압축 해제
+   tar -xzf terraform-multi-cloud-dr.tar.gz
+   cd terraform-multi-cloud-dr
+
+2. 문서 읽기
+   cat QUICKSTART.md
+
+3. 변수 설정
+   cp terraform.tfvars.example terraform.tfvars
+   nano terraform.tfvars
+
+4. Lambda 패키징
+   cd scripts/lambda-db-sync && ./package.sh && cd ../..
+
+5. 배포 실행
+   ./deploy.sh
+
+## 📦 다운로드 파일
+
+✅ terraform-multi-cloud-dr.tar.gz (29KB)
+   - 전체 프로젝트가 포함된 압축 파일
+   - 바로 배포 가능한 완전한 구조
+
+## 💡 주의사항
+
+- terraform.tfvars 파일을 반드시 생성하고 설정하세요
+- AWS/Azure CLI 자격증명을 먼저 설정하세요
+- Lambda 함수를 먼저 패키징하세요
+- 예상 비용: $400-600/월
+
+---
+Made with ❤️ for AWS2 Final Project
