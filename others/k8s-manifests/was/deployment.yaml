@@ -1,5 +1,5 @@
-# others/k8s-manifests/was/deployment.yaml
-# WAS Tier (Spring Boot) Deployment
+# k8s-manifests/was/deployment.yaml
+# WAS Tier - Spring Boot Application
 
 apiVersion: apps/v1
 kind: Deployment
@@ -14,29 +14,44 @@ spec:
   selector:
     matchLabels:
       app: was-spring
+      tier: was
   template:
     metadata:
       labels:
         app: was-spring
         tier: was
     spec:
-      # Node Selector: WAS Tier 노드에만 배포
-      nodeSelector:
-        tier: was
+      # 노드 선택
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: tier
+                operator: In
+                values:
+                - was
       
       containers:
       - name: spring-boot
-        image: cloud039/test:bootcamp
+        # Spring Boot 3.x 공식 이미지 (Java 21 포함)
+        image: springio/petclinic:latest
+        imagePullPolicy: Always
         
         ports:
         - containerPort: 8080
           name: http
+          protocol: TCP
         
         # 환경 변수
         env:
-        # 데이터베이스 연결 (Secret에서 가져옴)
+        # Spring Profile
+        - name: SPRING_PROFILES_ACTIVE
+          value: "mysql"
+        
+        # 데이터베이스 연결
         - name: SPRING_DATASOURCE_URL
-          value: "jdbc:mysql://$(DB_HOST):3306/$(DB_NAME)?useSSL=true&requireSSL=false"
+          value: "jdbc:mysql://prod-rds.ciyiccb2k2z8.ap-northeast-2.rds.amazonaws.com:3306/petclinic?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
         
         - name: DB_HOST
           valueFrom:
@@ -64,64 +79,46 @@ spec:
         
         # JVM 옵션
         - name: JAVA_OPTS
-          value: "-Xms512m -Xmx1024m -XX:+UseG1GC"
-        
-        # Spring Profile
-        - name: SPRING_PROFILES_ACTIVE
-          value: "prod"
-        
-        # Health Check
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+          value: "-Xms256m -Xmx512m"
         
         # 리소스 제한
         resources:
           requests:
             cpu: 500m
-            memory: 1Gi
+            memory: 512Mi
           limits:
-            cpu: 2000m
-            memory: 2Gi
+            cpu: 1000m
+            memory: 1Gi
         
-        # 로그 볼륨
-        volumeMounts:
-        - name: app-logs
-          mountPath: /app/logs
+        # Liveness Probe
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Readiness Probe
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Startup Probe (첫 시작 시)
+        startupProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 12
       
-      volumes:
-      - name: app-logs
-        emptyDir: {}
----
-# DB Credentials Secret (예시 - 실제로는 Terraform으로 생성)
-# kubectl create secret generic db-credentials \
-#   --from-literal=host=rds-endpoint.ap-northeast-2.rds.amazonaws.com \
-#   --from-literal=database=petclinic \
-#   --from-literal=username=admin \
-#   --from-literal=password=your-password \
-#   -n was
-apiVersion: v1
-kind: Secret
-metadata:
-  name: db-credentials
-  namespace: was
-type: Opaque
-stringData:
-  host: "REPLACE_WITH_RDS_ENDPOINT"
-  database: "petclinic"
-  username: "admin"
-  password: "REPLACE_WITH_PASSWORD"
+      # 종료 대기 시간
+      terminationGracePeriodSeconds: 30
