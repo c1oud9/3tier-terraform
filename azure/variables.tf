@@ -28,6 +28,7 @@ variable "admin_ip" {
 variable "ssh_public_key" {
   description = "SSH 공개 키"
   type        = string
+  # 예: file("~/.ssh/id_rsa.pub")
 }
 
 variable "web_vm_size" {
@@ -77,7 +78,6 @@ variable "db_password" {
 variable "aws_vpn_gateway_ip" {
   description = "AWS VPN Gateway Public IP"
   type        = string
-  default     = null
   # AWS 배포 후 입력 필요
 }
 

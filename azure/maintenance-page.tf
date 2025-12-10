@@ -11,22 +11,29 @@ variable "enable_maintenance_page" {
   default     = false
 }
 
-# 랜덤 접미사 생성
-resource "random_string" "suffix" {
-  count   = var.enable_maintenance_page ? 1 : 0
-  length  = 6
-  special = false
-  upper   = false
-}
-
 # =================================================
 # Storage Account (정적 웹사이트 호스팅용)
 # =================================================
 
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+terraform {
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
 resource "azurerm_storage_account" "maintenance" {
   count = var.enable_maintenance_page ? 1 : 0
   
-  name                     = "maintenance${random_string.suffix[0].result}"
+  name                     = "maintenance${random_string.suffix.result}"
   resource_group_name      = azurerm_resource_group.main.name
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
@@ -383,6 +390,7 @@ resource "azurerm_storage_blob" "maintenance_404" {
 </html>
 HTML
 }
+
 
 # =================================================
 # Outputs

@@ -43,14 +43,6 @@ resource "azurerm_virtual_network" "main" {
   resource_group_name = azurerm_resource_group.main.name
 }
 
-# AppGW Subnet (Application Gateway 전용)
-resource "azurerm_subnet" "appgw" {
-  name                 = "subnet-appgw"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["172.16.1.0/24"]  # 다른 서브넷과 겹치지 않게 설정
-}
-
 # Gateway Subnet (VPN용)
 resource "azurerm_subnet" "gateway" {
   name                 = "GatewaySubnet"
@@ -298,10 +290,6 @@ resource "azurerm_mysql_flexible_server" "main" {
   storage {
     size_gb = 20
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "azurerm_mysql_flexible_database" "main" {
@@ -354,8 +342,6 @@ resource "azurerm_virtual_network_gateway" "main" {
 
 # Local Network Gateway (AWS 측 정보)
 resource "azurerm_local_network_gateway" "aws" {
-
-  count = var.aws_vpn_gateway_ip != null ? 1 : 0 # 수정한 부분
   name                = "lng-aws-${var.environment}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
@@ -369,14 +355,13 @@ resource "azurerm_local_network_gateway" "aws" {
 
 # VPN Connection (Azure to AWS)
 resource "azurerm_virtual_network_gateway_connection" "aws" {
-  count = var.aws_vpn_gateway_ip != null ? 1 : 0
   name                = "vpn-to-aws-${var.environment}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   
   type                       = "IPsec"
   virtual_network_gateway_id = azurerm_virtual_network_gateway.main.id
-  local_network_gateway_id   = azurerm_local_network_gateway.aws[count.index].id
+  local_network_gateway_id   = azurerm_local_network_gateway.aws.id
   
   shared_key = var.vpn_shared_key
   
@@ -411,16 +396,8 @@ resource "azurerm_application_gateway" "main" {
   
   gateway_ip_configuration {
     name      = "appgw-ip-config"
-    subnet_id = azurerm_subnet.appgw.id
+    subnet_id = azurerm_subnet.web.id
   }
-
-  # ssl 추가
-
-  ssl_policy {
-    policy_type = "Predefined"
-    policy_name = "AppGwSslPolicy20220101"
-  }
-
   
   frontend_port {
     name = "http-port"

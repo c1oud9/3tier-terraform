@@ -27,7 +27,7 @@ spec:
       containers:
       - name: spring-boot
         # DockerHub 이미지 (여기를 실제 이미지로 수정하세요!)
-        image: c1oud039/test:latest
+        image: your-username/petclinic:latest
         
         ports:
         - containerPort: 8080
@@ -35,8 +35,6 @@ spec:
         
         # 환경 변수
         env:
-         - name: PORT
-          value: "8080"
         # 데이터베이스 연결 (Secret에서 가져옴)
         - name: SPRING_DATASOURCE_URL
           value: "jdbc:mysql://$(DB_HOST):3306/$(DB_NAME)?useSSL=true&requireSSL=false"
@@ -76,7 +74,7 @@ spec:
         # Health Check
         livenessProbe:
           httpGet:
-            path: /health
+            path: /actuator/health/liveness
             port: 8080
           initialDelaySeconds: 60
           periodSeconds: 10
@@ -85,7 +83,7 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /health
+            path: /actuator/health/readiness
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 5

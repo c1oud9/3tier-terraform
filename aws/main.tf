@@ -46,10 +46,14 @@ provider "aws" {
 module "vpc" {
   source = "./modules/vpc"
   
+  environment        = var.environment
   vpc_cidr           = var.aws_vpc_cidr
   availability_zones = var.aws_availability_zones
-  environment        = var.environment
-  region             = var.aws_region
+  
+  public_subnet_cidrs = var.public_subnet_cidrs
+  web_subnet_cidrs    = var.web_subnet_cidrs
+  was_subnet_cidrs    = var.was_subnet_cidrs
+  rds_subnet_cidrs    = var.rds_subnet_cidrs
 }
 
 # =================================================
@@ -59,11 +63,14 @@ module "vpc" {
 module "alb" {
   source = "./modules/alb"
   
-  vpc_id          = module.vpc.vpc_id
-  public_subnets  = module.vpc.public_subnets
-  was_subnets     = module.vpc.was_subnets
-  private_subnets = module.vpc.private_subnets
-  environment     = var.environment
+  environment          = var.environment
+  vpc_id               = module.vpc.vpc_id
+  public_subnet_ids    = module.vpc.public_subnet_ids
+  deletion_protection  = false
+  enable_https         = var.enable_custom_domain
+  certificate_arn      = var.enable_custom_domain ? aws_acm_certificate.main[0].arn : ""
+  
+  depends_on = [module.vpc]
 }
 
 # =================================================
@@ -73,14 +80,10 @@ module "alb" {
 module "eks" {
   source = "./modules/eks"
   
-  vpc_id                  = module.vpc.vpc_id
-  vpc_cidr                = module.vpc.vpc_cidr
-  web_subnets             = module.vpc.web_subnets
-  was_subnets             = module.vpc.was_subnets
-  private_subnets         = module.vpc.private_subnets
-  alb_security_group_id   = module.alb.external_alb_sg_id
-  environment             = var.environment
-  node_instance_type      = var.eks_node_instance_type
+  environment         = var.environment
+  web_subnet_ids      = module.vpc.web_subnet_ids
+  was_subnet_ids      = module.vpc.was_subnet_ids
+  node_instance_type  = var.eks_node_instance_type
   
   # Web Tier 노드 그룹 설정
   web_desired_size = var.eks_web_desired_size
@@ -91,6 +94,9 @@ module "eks" {
   was_desired_size = var.eks_was_desired_size
   was_min_size     = var.eks_was_min_size
   was_max_size     = var.eks_was_max_size
+  
+  depends_on = [module.vpc]
+}
 }
 
 # =================================================
@@ -106,14 +112,22 @@ resource "random_password" "db_password" {
 module "rds" {
   source = "./modules/rds"
   
-  vpc_id             = module.vpc.vpc_id
-  db_subnets         = module.vpc.db_subnets
-  db_name            = var.db_name
-  db_username        = var.db_username
-  db_password        = random_password.db_password.result
-  environment        = var.environment
-  multi_az           = true
-  backup_retention   = 7
+  environment                = var.environment
+  vpc_id                     = module.vpc.vpc_id
+  subnet_ids                 = module.vpc.rds_subnet_ids
+  eks_security_group_id      = module.eks.cluster_security_group_id
+  
+  database_name              = var.db_name
+  master_username            = var.db_username
+  master_password            = random_password.db_password.result
+  
+  instance_class             = var.rds_instance_class
+  allocated_storage          = var.rds_allocated_storage
+  max_allocated_storage      = var.rds_max_allocated_storage
+  
+  multi_az                   = var.rds_multi_az
+  skip_final_snapshot        = var.rds_skip_final_snapshot
+  deletion_protection        = var.rds_deletion_protection
 }
 
 # =================================================

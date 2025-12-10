@@ -51,6 +51,30 @@ variable "aws_availability_zones" {
   default     = ["ap-northeast-2a", "ap-northeast-2c"]
 }
 
+variable "public_subnet_cidrs" {
+  description = "Public 서브넷 CIDR 리스트"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable "web_subnet_cidrs" {
+  description = "Web Tier 서브넷 CIDR 리스트"
+  type        = list(string)
+  default     = ["10.0.11.0/24", "10.0.12.0/24"]
+}
+
+variable "was_subnet_cidrs" {
+  description = "WAS Tier 서브넷 CIDR 리스트"
+  type        = list(string)
+  default     = ["10.0.21.0/24", "10.0.22.0/24"]
+}
+
+variable "rds_subnet_cidrs" {
+  description = "RDS 서브넷 CIDR 리스트"
+  type        = list(string)
+  default     = ["10.0.31.0/24", "10.0.32.0/24"]
+}
+
 variable "db_name" {
   description = "데이터베이스 이름"
   type        = string
@@ -63,6 +87,56 @@ variable "db_username" {
   default     = "admin"
   sensitive   = true
 }
+
+# =================================================
+# RDS 설정
+# =================================================
+
+variable "rds_instance_class" {
+  description = "RDS 인스턴스 클래스"
+  type        = string
+  default     = "db.t3.medium"
+}
+
+variable "rds_allocated_storage" {
+  description = "RDS 할당 스토리지 (GB)"
+  type        = number
+  default     = 100
+}
+
+variable "rds_max_allocated_storage" {
+  description = "RDS 최대 스토리지 (GB)"
+  type        = number
+  default     = 200
+}
+
+variable "rds_multi_az" {
+  description = "RDS Multi-AZ 배포 여부"
+  type        = bool
+  default     = true
+}
+
+variable "rds_backup_retention" {
+  description = "RDS 백업 보관 기간 (일)"
+  type        = number
+  default     = 7
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "RDS 삭제 시 최종 스냅샷 생략 여부"
+  type        = bool
+  default     = false
+}
+
+variable "rds_deletion_protection" {
+  description = "RDS 삭제 방지 활성화"
+  type        = bool
+  default     = true
+}
+
+# =================================================
+# EKS 설정
+# =================================================
 
 variable "eks_node_instance_type" {
   description = "EKS 노드 인스턴스 타입"
