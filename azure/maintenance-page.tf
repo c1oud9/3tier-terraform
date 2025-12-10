@@ -21,14 +21,6 @@ resource "random_string" "suffix" {
   upper   = false
 }
 
-terraform {
-  required_providers {
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
-}
 
 resource "azurerm_storage_account" "maintenance" {
   count = var.enable_maintenance_page ? 1 : 0

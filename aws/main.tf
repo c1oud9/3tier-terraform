@@ -97,7 +97,7 @@ module "eks" {
   
   depends_on = [module.vpc]
 }
-}
+
 
 # =================================================
 # AWS RDS MySQL (Multi-AZ)
