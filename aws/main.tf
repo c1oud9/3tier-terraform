@@ -56,22 +56,6 @@ module "vpc" {
   rds_subnet_cidrs    = var.rds_subnet_cidrs
 }
 
-# =================================================
-# AWS Application Load Balancer
-# =================================================
-
-module "alb" {
-  source = "./modules/alb"
-  
-  environment          = var.environment
-  vpc_id               = module.vpc.vpc_id
-  public_subnet_ids    = module.vpc.public_subnet_ids
-  deletion_protection  = false
-  enable_https         = var.enable_custom_domain
-  certificate_arn      = var.enable_custom_domain ? aws_acm_certificate.main[0].arn : ""
-  
-  depends_on = [module.vpc]
-}
 
 # =================================================
 # AWS EKS 클러스터 (Web/WAS Tier)

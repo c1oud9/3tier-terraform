@@ -112,9 +112,6 @@ output "deployment_summary" {
   Network:
     - VPC CIDR: ${module.vpc.vpc_cidr}
   
-  Load Balancer:
-    - ALB DNS: ${module.alb.alb_dns_name}
-    - Access URL: http://${module.alb.alb_dns_name}
   
   EKS Cluster:
     - Name: ${module.eks.cluster_name}
