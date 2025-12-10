@@ -26,8 +26,7 @@ spec:
       
       containers:
       - name: spring-boot
-        # DockerHub 이미지 (여기를 실제 이미지로 수정하세요!)
-        image: your-username/petclinic:latest
+        image: cloud039/test:bootcamp
         
         ports:
         - containerPort: 8080

@@ -82,4 +82,4 @@ rds_skip_final_snapshot   = true   # 테스트를 위해 true
 # 비용 관리
 # =================================================
 
-budget_alert_email = "reyne7055@e=gmail.com"
+budget_alert_email = "reyne7055@gmail.com"
