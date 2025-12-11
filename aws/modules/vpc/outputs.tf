@@ -10,6 +10,11 @@ output "vpc_cidr" {
   value       = aws_vpc.main.cidr_block
 }
 
+output "private_route_table_id" {
+  description = "Private Route table ID"
+  value       = aws_route_table.private.id
+}
+
 output "public_subnet_ids" {
   description = "Public 서브넷 ID 리스트"
   value       = aws_subnet.public[*].id

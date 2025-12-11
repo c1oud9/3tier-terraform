@@ -213,13 +213,13 @@ resource "aws_vpn_connection_route" "azure" {
   vpn_connection_id      = aws_vpn_connection.azure.id
 }
 
-/*
+
 # VPN Gateway Route Propagation
 resource "aws_vpn_gateway_route_propagation" "private" {
   vpn_gateway_id = aws_vpn_gateway.main.id
   route_table_id = module.vpc.private_route_table_id
 }
-*/
+
 
 # =================================================
 # 데이터 소스
